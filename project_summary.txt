@@ -1,0 +1,105 @@
+E-COMMERCE SALES & SUPPLY CHAIN ANALYTICS (POWER BI) - WORK SUMMARY
+
+Overall objective
+- Build one Power BI report suite from raw e-commerce order data (Olist, about 100k orders) that covers sales performance, customer behavior, delivery operations and inventory health.
+- Answer four business problems: no single view of sales, poor customer retention visibility, unknown causes of late deliveries, and inventory risk (stock-outs and overstock).
+- Finish with data-backed findings and recommendations.
+
+Tools used
+- Power BI Desktop and Service, Power Query (M), DAX, optional Tabular Editor and DAX Studio, Git and GitHub.
+- Olist dataset from Kaggle plus one simulated inventory table (clearly labeled as simulated).
+
+
+
+PHASE 1: GET THE DATA
+
+Objectives
+- Know what data exists, how complete it is and where the gaps are before building on it.
+
+Steps
+- Downloaded the 9 Olist CSV files into data/raw.
+- File Profile: row and column counts, nulls, primary key candidates, date range. Record in docs/data_sources.md.
+- Mapped the key relationships between orders, customers, items, products, sellers, payments and reviews.
+- Noted that customer_id changes per order, so customer_unique_id must be used for repeat-customer analysis.
+- Created the simulated inventory table (product_id, warehouse_state, snapshot_date, stock_on_hand, reorder_point, lead_time_days) using base inventory on sales volumes.
+
+
+
+PHASE 2: CLEAN AND TRANSFORM IN POWER QUERY
+
+Objectives
+- Fixed missing values, wrong types, duplicates and untranslated names so revenue, delivery times and customer counts are correct and trusted.
+
+Steps
+- Load data through Get Data and choose Transform Data.
+- Create a DataFolderPath parameter so the project works on any machine.
+- Organize queries into groups: Raw, Staging, Facts, Dimensions, Parameters, and disable load on raw and staging.
+- Fix data types (dates as Date/DateTime, money as Fixed decimal, IDs as Text, review scores as Whole number).
+- Orders: remove null purchase timestamps, decide treatment of canceled and unavailable orders, add Delivery Days, Delay Days, Is Late and Approval Lag Days, handle null delivery dates safely.
+- Products: merge with the translation table for English category names and replace nulls with Unknown.
+- Customers: keep both ID columns, standardize city text, keep two-letter state codes.
+- Geolocation: group by ZIP prefix with average latitude and longitude and remove invalid coordinates.
+- Reviews: keep only the latest review per order.
+- Payments: group by order_id for total payment value and main payment type.
+- Load the simulated inventory table and confirm no duplicate keys.
+- Remove unused columns early to keep the model small.
+
+
+
+PHASE 3: BUILD THE DATA MODEL
+
+Objectives
+- Make cross-table questions (for example, do late deliveries lower review scores by state) answerable with correct numbers.
+
+Steps
+- Apply Power Query changes and open Model view.
+- Design a star schema: fact tables (Orders, Order Items, Payments, Reviews, Inventory) and dimensions (Customers, Products, Sellers, Geography, Date).
+- Create one-to-many, single-direction relationships from dimensions to facts and from Orders down to its child tables.
+- Connect geography by ZIP prefix or state (one choice, documented) and avoid ambiguous paths.
+- Check for circular, ambiguous or unexpected many-to-many relationships.
+- Save a model screenshot as screenshots/data_model.png.
+
+
+PHASE 4: DATE TABLE AND DAX FOUNDATIONS
+
+Objectives
+- Enable reliable time intelligence (this month vs last year, YTD) and keep the model easy to maintain.
+
+Steps
+- Create a continuous Date table in DAX with Year, Quarter, Month Number, Month Name, Year-Month, Week Number and Day Name, covering full years.
+- Mark it as the date table.
+- Set sort orders for Month Name, Day Name and Year-Month.
+- Create a dedicated _Measures table for all measures.
+- Create display folders: Sales, Customers, Operations, Inventory, Time Intelligence, Parameters.
+
+
+
+PHASE 5: WRITE THE DAX MEASURES
+
+Objectives
+- Defining each number once in the model so every report shows the same trusted figures.
+
+Steps
+- Core sales measures: Total Revenue, Total Freight, Orders, AOV, Items Sold.
+- Time intelligence: Revenue LY, Revenue YoY %, Revenue YTD, Revenue 3M Avg, Revenue MoM %.
+- Customer measures: Customers, Repeat Customers, Repeat Rate, Revenue per Customer
+- Operations measures: Delivered Orders, Late Orders, On-Time Delivery %, Avg Delivery Days, Avg Delay Days, Freight % of Revenue, Avg Review Score
+- Inventory measures (simulated data): Stock On Hand, Avg Daily Demand, Days of Cover, Stock-out Days, Stock-out Rate, Below Reorder Point.
+- Advanced measures: Pareto and ABC product classification, dynamic Top N with a what-if parameter, field parameter metric switcher, cohort retention, optional calculation group.
+- Validate every measure against Excel or Python totals, check slicer behavior, and record results in docs/validation_log.md.
+
+
+
+PHASE 7: BUILD THE REPORT PAGES
+
+Objectives
+- Give each audience a page that answers its questions quickly.
+
+Steps
+- Page 1, Executive Overview (leadership): KPI cards with YoY indicators, revenue trend with prior-year or 3-month average line, revenue by state, top 10 categories, slicers for Year, Quarter and Category.
+- Page 2, Sales & Products (category managers): category treemap, top/bottom 10 products with Top N parameter, Pareto chart with ABC class, price vs rating scatter, category-by-month heatmap, metric switcher.
+- Page 3, Customer Analytics (marketing): new vs repeat customers, Repeat Rate and Revenue per Customer cards, RFM segment distribution, cohort retention matrix, Key influencers for low review scores, customer map.
+- Page 4, Operations & Delivery (logistics): On-Time Delivery % trend with target line, delay by state, decomposition tree on Late Orders, seller scorecard with conditional formatting, freight vs delivery days scatter, review score for on-time vs late orders.
+- Page 5, Inventory & Forecast (supply planners): Days of Cover by category with red/amber/green thresholds, stock-out and below-reorder table, overstock view, 3-month revenue forecast, anomaly detection on daily orders, stock-out and reorder cards. Page labeled "Inventory data is simulated for demonstration".
+- Final checks: every business question answered, slicers sync correctly, consistent titles and formats, totals reconcile, alt text on key visuals, screenshots of every page saved.
+
